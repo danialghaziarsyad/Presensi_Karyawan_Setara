@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presensi Karyawan Setara Spaghetti</title>
+    <title>Sistem Presensi Real-Time</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .camera-container {
@@ -16,15 +15,25 @@
             border-radius: 0.5rem;
             overflow: hidden;
         }
+
         .photo-preview {
             border: 2px solid #4a5568;
             transition: all 0.3s ease;
         }
+
         .photo-preview:hover {
             border-color: #4299e1;
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 640px) {
+            .responsive-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <header class="mb-10 text-center">
@@ -38,7 +47,8 @@
 
         <main class="max-w-4xl mx-auto">
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="responsive-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+
                     <div>
                         <h2 class="text-xl font-semibold text-gray-800 mb-4">
                             Form Presensi
@@ -50,8 +60,11 @@
                                     class="block text-sm font-medium text-gray-700 mb-1">
                                     Nama Lengkap
                                 </label>
-                                <input type="text" id="nama" required
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <input
+                                    type="text"
+                                    id="nama"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
 
                             <div>
@@ -59,8 +72,9 @@
                                     class="block text-sm font-medium text-gray-700 mb-1">
                                     Shift
                                 </label>
-                                <select id="shift"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <select
+                                    id="shift"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="Pagi">Pagi (10:00-16:00)</option>
                                     <option value="Sore">Sore (16:00-22:00)</option>
                                 </select>
@@ -74,38 +88,49 @@
                         </h2>
 
                         <div class="camera-container mb-4">
-                            <video id="camera-feed" autoplay playsinline
-                                class="w-full"></video>
+                            <video
+                                id="camera-feed"
+                                autoplay
+                                playsinline
+                                class="w-full">
+                            </video>
                         </div>
 
                         <div id="photo-preview-container" class="hidden mb-4">
                             <h3 class="text-lg font-medium text-gray-700 mb-2">
                                 Pratinjau Foto
                             </h3>
-                            <img id="photo-preview" alt="Pratinjau foto presensi"
+                            <img
+                                id="photo-preview"
+                                src="#"
+                                alt="Pratinjau foto presensi"
                                 class="photo-preview w-full rounded-lg">
                         </div>
 
                         <div class="flex space-x-4">
-                            <button type="button" id="take-photo-btn"
-                                class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            <button
+                                type="button"
+                                id="take-photo-btn"
+                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 Ambil Foto
                             </button>
-                            <button type="button" id="retake-photo-btn"
-                                class="hidden bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
+
+                            <button
+                                type="button"
+                                id="retake-photo-btn"
+                                class="hidden bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                                 Ambil Ulang
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <button type="button" id="submit-btn"
-                    class="mt-8 w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium">
+                <button
+                    type="button"
+                    id="submit-btn"
+                    class="mt-8 w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                     Simpan Presensi
                 </button>
-
-                <p id="status" class="mt-4 text-sm text-gray-700"
-                    role="status" aria-live="polite"></p>
             </div>
         </main>
     </div>
@@ -117,21 +142,22 @@
         let stream = null;
         let photoTaken = false;
 
-        const video = document.getElementById("camera-feed");
-        const takeBtn = document.getElementById("take-photo-btn");
-        const retakeBtn = document.getElementById("retake-photo-btn");
-        const previewContainer =
-            document.getElementById("photo-preview-container");
-        const preview = document.getElementById("photo-preview");
+        const videoElement = document.getElementById("camera-feed");
+        const takePhotoBtn = document.getElementById("take-photo-btn");
+        const retakePhotoBtn = document.getElementById("retake-photo-btn");
+        const previewContainer = document.getElementById("photo-preview-container");
+        const photoPreview = document.getElementById("photo-preview");
         const submitBtn = document.getElementById("submit-btn");
-        const statusEl = document.getElementById("status");
+        const namaInput = document.getElementById("nama");
+        const shiftInput = document.getElementById("shift");
 
         async function startCamera() {
-            try {
-                if (!navigator.mediaDevices?.getUserMedia) {
-                    throw new Error("Browser tidak mendukung akses kamera.");
-                }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Browser tidak mendukung akses kamera. Buka website melalui HTTPS.");
+                return;
+            }
 
+            try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         width: { ideal: 1280 },
@@ -141,75 +167,79 @@
                     audio: false
                 });
 
-                video.srcObject = stream;
-                await video.play();
+                videoElement.srcObject = stream;
+                await videoElement.play();
             } catch (error) {
-                console.error("Kamera gagal:", error);
-                alert("Kamera tidak dapat dibuka. Periksa izin kamera browser.");
+                console.error("Gagal mengakses kamera:", error);
+                alert("Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.");
             }
         }
 
-        takeBtn.addEventListener("click", () => {
-            if (!stream || !video.videoWidth) {
+        takePhotoBtn.addEventListener("click", () => {
+            if (!stream || !videoElement.videoWidth) {
                 alert("Kamera belum siap. Tunggu sebentar lalu coba lagi.");
                 return;
             }
 
             const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
 
-            canvas.getContext("2d").drawImage(
-                video, 0, 0, canvas.width, canvas.height
+            const context = canvas.getContext("2d");
+            context.drawImage(
+                videoElement,
+                0,
+                0,
+                canvas.width,
+                canvas.height
             );
 
-            preview.src = canvas.toDataURL("image/jpeg", 0.8);
+            photoPreview.src = canvas.toDataURL("image/jpeg", 0.8);
+
             previewContainer.classList.remove("hidden");
-            takeBtn.classList.add("hidden");
-            retakeBtn.classList.remove("hidden");
+            takePhotoBtn.classList.add("hidden");
+            retakePhotoBtn.classList.remove("hidden");
+
             photoTaken = true;
         });
 
-        retakeBtn.addEventListener("click", () => {
-            preview.removeAttribute("src");
+        retakePhotoBtn.addEventListener("click", () => {
+            photoPreview.src = "#";
             previewContainer.classList.add("hidden");
-            takeBtn.classList.remove("hidden");
-            retakeBtn.classList.add("hidden");
+            takePhotoBtn.classList.remove("hidden");
+            retakePhotoBtn.classList.add("hidden");
+
             photoTaken = false;
         });
 
         submitBtn.addEventListener("click", async () => {
-            if (submitBtn.disabled) return;
+            const nama = namaInput.value.trim();
+            const shift = shiftInput.value;
 
-            const nama = document.getElementById("nama").value.trim();
-            const shift = document.getElementById("shift").value;
-
-            if (!nama) {
-                alert("Masukkan nama lengkap terlebih dahulu.");
+            if (!nama || !shift) {
+                alert("Harap lengkapi nama dan shift!");
                 return;
             }
 
-            if (!shift || !photoTaken || !preview.src.startsWith("data:image/")) {
-                alert("Pilih shift dan ambil foto terlebih dahulu.");
+            if (!photoTaken || !photoPreview.src.startsWith("data:image/")) {
+                alert("Harap ambil foto terlebih dahulu!");
                 return;
             }
+
+            if (submitBtn.disabled) {
+                return;
+            }
+
+            const payload = {
+                nama: nama,
+                shift: shift,
+                foto: photoPreview.src
+            };
 
             submitBtn.disabled = true;
-            submitBtn.textContent = "Mengirim...";
-            statusEl.textContent = "Mengirim data presensi...";
+            submitBtn.textContent = "Mengirim Presensi...";
 
             try {
-                const payload = {
-                    nama,
-                    shift,
-                    foto: preview.src
-                };
-
-                /*
-                 * text/plain merupakan content type yang diizinkan
-                 * pada request no-cors. Apps Script tetap dapat membaca
-                 * isi JSON menggunakan JSON.parse(e.postData.contents).
-                 */
                 await fetch(SCRIPT_URL, {
                     method: "POST",
                     mode: "no-cors",
@@ -219,31 +249,21 @@
                     body: JSON.stringify(payload)
                 });
 
-                /*
-                 * Respons no-cors bersifat opaque. Promise yang selesai
-                 * bukan bukti bahwa Sheet dan Drive berhasil menyimpan data.
-                 */
-                statusEl.textContent =
-                    "Permintaan terkirim, tetapi hasil penyimpanan belum terverifikasi. " +
-                    "Periksa Sheet1 dan folder foto sebelum mencoba lagi.";
-
                 alert(
                     "Permintaan presensi sudah dikirim. " +
-                    "Penyimpanan belum dapat dipastikan. " +
-                    "Periksa Google Sheet sebelum mengirim ulang."
+                    "Karena keterbatasan mode no-cors, status penyimpanan belum dapat dipastikan. " +
+                    "Periksa Google Sheets sebelum mengirim ulang agar tidak terjadi duplikasi."
                 );
             } catch (error) {
-                console.error("Pengiriman gagal:", error);
-                statusEl.textContent =
-                    "Pengiriman gagal atau koneksi bermasalah. Periksa koneksi dan Apps Script.";
-                alert("Pengiriman gagal. Data belum dapat dipastikan tersimpan.");
+                console.error("Gagal mengirim presensi:", error);
+                alert("Pengiriman gagal. Periksa koneksi internet lalu coba kembali.");
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Simpan Presensi";
             }
         });
 
-        window.addEventListener("DOMContentLoaded", startCamera);
+        document.addEventListener("DOMContentLoaded", startCamera);
 
         window.addEventListener("beforeunload", () => {
             if (stream) {
@@ -253,4 +273,3 @@
     </script>
 </body>
 </html>
-```
